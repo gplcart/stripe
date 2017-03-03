@@ -47,7 +47,7 @@ class Stripe
 
     /**
      * Stripe Omnipay instance
-     * @var object
+     * @var \Omnipay\Stripe\Gateway $gateway
      */
     protected $gateway;
 
@@ -154,8 +154,25 @@ class Stripe
      */
     public function hookModuleEnableBefore(&$result)
     {
-        // Make sure that Stripe gateway is loaded by Omnipay Library module
-        $error = $this->language->text('Unable to load Stripe gateway');
+        $this->validateGateway($result);
+    }
+
+    /**
+     * Implements hook "module.install.before"
+     * @param mixed $result
+     */
+    public function hookModuleInstallBefore(&$result)
+    {
+        $this->validateGateway($result);
+    }
+
+    /**
+     * Checks the gateway object is loaded
+     * @param mixed $result
+     */
+    protected function validateGateway(&$result)
+    {
+        $error = $this->language->text('Unable to load @name gateway', array('@name' => 'Stripe'));
         $result = is_object($this->gateway) ? true : $error;
     }
 
@@ -256,7 +273,7 @@ class Stripe
             return null;
         }
 
-        // Make order data and controller object accessible across all class
+        // Make order data and controller object accessible across all the class
         $this->data_order = $order;
         $this->controller = $controller;
 
@@ -295,7 +312,7 @@ class Stripe
     }
 
     /**
-     * Processes response from Stripe gateway
+     * Processes gateway response
      * @return boolean
      */
     protected function processResponse()
