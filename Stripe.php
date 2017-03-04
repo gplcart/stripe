@@ -172,8 +172,9 @@ class Stripe
      */
     protected function validateGateway(&$result)
     {
-        $error = $this->language->text('Unable to load @name gateway', array('@name' => 'Stripe'));
-        $result = is_object($this->gateway) ? true : $error;
+        if (!is_object($this->gateway)) {
+            $result = $this->language->text('Unable to load @name gateway', array('@name' => 'Stripe'));
+        }
     }
 
     /**
@@ -273,7 +274,6 @@ class Stripe
             return null;
         }
 
-        // Make order data and controller object accessible across all the class
         $this->data_order = $order;
         $this->controller = $controller;
 
