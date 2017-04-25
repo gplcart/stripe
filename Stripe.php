@@ -9,16 +9,13 @@
 
 namespace gplcart\modules\stripe;
 
-use gplcart\core\Config;
-use gplcart\core\models\Order as OrderModel,
-    gplcart\core\models\Language as LanguageModel,
-    gplcart\core\models\Transaction as TransactionModel;
-use gplcart\modules\omnipay_library\OmnipayLibrary as OmnipayLibraryModule;
+use gplcart\core\Module;
+use gplcart\core\models\Language as LanguageModel;
 
 /**
  * Main class for Stripe module
  */
-class Stripe
+class Stripe extends Module
 {
 
     /**
@@ -46,10 +43,10 @@ class Stripe
     protected $controller;
 
     /**
-     * Stripe Omnipay instance
-     * @var \Omnipay\Stripe\Gateway $gateway
+     * Language model instance
+     * @var \gplcart\core\models\Language $language
      */
-    protected $gateway;
+    protected $language;
 
     /**
      * Order model instance
@@ -58,80 +55,56 @@ class Stripe
     protected $order;
 
     /**
-     * Transaction model instance
-     * @var \gplcart\core\models\Transaction $transaction
-     */
-    protected $transaction;
-
-    /**
-     * Language model instance
-     * @var \gplcart\core\models\Language $language
-     */
-    protected $language;
-
-    /**
-     * Config class instance
-     * @var \gplcart\core\Config $config
-     */
-    protected $config;
-
-    /**
-     * Omnipay library module instance
-     * @var \gplcart\modules\omnipay_library\OmnipayLibrary
-     */
-    protected $omnipay_library_module;
-
-    /**
-     * Constructor
-     * @param Config $config
      * @param LanguageModel $language
-     * @param OrderModel $order
-     * @param TransactionModel $transaction
-     * @param OmnipayLibraryModule $omnipay_library_module
      */
-    public function __construct(Config $config, LanguageModel $language,
-            OrderModel $order, TransactionModel $transaction,
-            OmnipayLibraryModule $omnipay_library_module)
+    public function __construct(LanguageModel $language)
     {
-        $this->order = $order;
-        $this->config = $config;
+        parent::__construct();
+
         $this->language = $language;
-        $this->transaction = $transaction;
-
-        $this->omnipay_library_module = $omnipay_library_module;
-        $this->gateway = $this->omnipay_library_module->getGatewayInstance('Stripe');
     }
 
     /**
-     * Module info
-     * @return array
+     * Returns Stripe gateway object
+     * @return object
+     * @throws \InvalidArgumentException
      */
-    public function info()
+    protected function getGatewayInstance()
     {
-        return array(
-            'core' => '1.x',
-            'name' => 'Stripe',
-            'version' => '1.0.0-alfa.1',
-            'description' => 'Stripe payment methods. Based on Omnipay PHP payment processing library',
-            'author' => 'Iurii Makukh <gplcart.software@gmail.com>',
-            'license' => 'GNU General Public License 3.0',
-            'dependencies' => array('omnipay_library' => '>= 1.0'),
-            'configure' => 'admin/module/settings/stripe',
-            'settings' => $this->getDefaultSettings()
-        );
+        /* @var $object \gplcart\modules\omnipay_library\OmnipayLibrary */
+        $object = $this->getInstance('gplcart\\modules\\omnipay_library\\OmnipayLibrary');
+
+        if (!$object instanceof \Omnipay\Stripe\Gateway) {
+            throw new \InvalidArgumentException('Object is not instance of Omnipay\Stripe\Gateway');
+        }
+
+        return $object->getGatewayInstance('Stripe');
     }
 
     /**
-     * Returns an array of default module settings
-     * @return array
+     * Implements hook "module.enable.before"
+     * @param mixed $result
      */
-    protected function getDefaultSettings()
+    public function hookModuleEnableBefore(&$result)
     {
-        return array(
-            'test' => true,
-            'status' => true,
-            'order_status_success' => $this->order->getStatusProcessing()
-        );
+        try {
+            $this->getGatewayInstance();
+        } catch (\InvalidArgumentException $ex) {
+            $result = $ex->getMessage();
+        }
+    }
+
+    /**
+     * Implements hook "module.install.before"
+     * @param mixed $result
+     */
+    public function hookModuleInstallBefore(&$result)
+    {
+        try {
+            $this->getGatewayInstance();
+        } catch (\InvalidArgumentException $ex) {
+            $result = $ex->getMessage();
+        }
     }
 
     /**
@@ -146,35 +119,6 @@ class Stripe
                 'controller' => array('gplcart\\modules\\stripe\\controllers\\Settings', 'editSettings')
             )
         );
-    }
-
-    /**
-     * Implements hook "module.enable.before"
-     * @param mixed $result
-     */
-    public function hookModuleEnableBefore(&$result)
-    {
-        $this->validateGateway($result);
-    }
-
-    /**
-     * Implements hook "module.install.before"
-     * @param mixed $result
-     */
-    public function hookModuleInstallBefore(&$result)
-    {
-        $this->validateGateway($result);
-    }
-
-    /**
-     * Checks the gateway object is loaded
-     * @param mixed $result
-     */
-    protected function validateGateway(&$result)
-    {
-        if (!is_object($this->gateway)) {
-            $result = $this->language->text('Unable to load @name gateway', array('@name' => 'Stripe'));
-        }
     }
 
     /**
@@ -240,13 +184,14 @@ class Stripe
     /**
      * Implements hook "order.add.before"
      * @param array $order
+     * @param \gplcart\core\models\Order $model
      */
-    public function hookOrderAddBefore(array &$order)
+    public function hookOrderAddBefore(array &$order, $model)
     {
         // Adjust order status before creation
         // We want to get payment in advance, so assign "awaiting payment" status
         if ($order['payment'] === 'stripe') {
-            $order['status'] = $this->order->getStatusAwaitingPayment();
+            $order['status'] = $model->getStatusAwaitingPayment();
         }
     }
 
@@ -266,24 +211,22 @@ class Stripe
      * Implements hook "order.complete.page"
      * @param array $order
      * @param \gplcart\core\controllers\frontend\Controller $controller
-     * @return null
+     * @param \gplcart\core\models\Order $model
      */
-    public function hookOrderCompletePage(array $order, $controller)
+    public function hookOrderCompletePage(array $order, $controller, $model)
     {
         if ($order['payment'] !== 'stripe') {
             return null;
         }
 
+        $this->order = $model;
         $this->data_order = $order;
         $this->controller = $controller;
 
         $this->submit();
 
-        // We're using Stripe.js, so add all needed javascripts
         $controller->setJs('https://js.stripe.com/v2');
         $controller->setJs('system/modules/stripe/js/common.js');
-
-        // Pass public key to JS files
         $controller->setJsSettings('stripe', array('key' => $this->getPublicKey()));
     }
 
@@ -305,9 +248,9 @@ class Stripe
             'amount' => $this->data_order['total_formatted_number']
         );
 
-        $this->gateway->setApiKey($this->getSecretKey());
-        $this->response = $this->gateway->purchase($params)->send();
-
+        $gateway = $this->getGatewayInstance();
+        $gateway->setApiKey($this->getSecretKey());
+        $this->response = $gateway->purchase($params)->send();
         return $this->processResponse();
     }
 
@@ -360,11 +303,8 @@ class Stripe
      */
     protected function updateOrderStatus()
     {
-        $data = array(
-            'status' => $this->setting('order_status_success'));
+        $data = array('status' => $this->setting('order_status_success'));
         $this->order->update($this->data_order['order_id'], $data);
-
-        // Load fresh data
         $this->data_order = $this->order->get($this->data_order['order_id']);
     }
 
@@ -382,7 +322,9 @@ class Stripe
             'gateway_transaction_id' => $this->response->getTransactionReference()
         );
 
-        return $this->transaction->add($transaction);
+        /* @var $object \gplcart\core\models\Transaction */
+        $object = $this->getInstance('gplcart\\core\\models\\Transaction');
+        return $object->add($transaction);
     }
 
 }
