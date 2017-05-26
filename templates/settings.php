@@ -51,7 +51,7 @@
         <div class="col-md-4">
           <select name="settings[order_status_success]" class="form-control">
             <?php foreach ($statuses as $status_id => $status_name) { ?>
-            <option value="<?php echo $this->escape($status_id); ?>"<?php echo isset($settings['order_status_success']) && $settings['order_status_success'] == $status_id ? ' selected' : ''; ?>><?php echo $this->escape($status_name); ?></option>
+            <option value="<?php echo $this->e($status_id); ?>"<?php echo isset($settings['order_status_success']) && $settings['order_status_success'] == $status_id ? ' selected' : ''; ?>><?php echo $this->e($status_name); ?></option>
             <?php } ?>
           </select>
           <div class="help-block">
@@ -62,7 +62,7 @@
       <div class="form-group">
         <label class="col-md-2 control-label"><?php echo $this->text('Test secret key'); ?></label>
         <div class="col-md-4">
-          <input name="settings[test_key]" class="form-control" value="<?php echo isset($settings['test_key']) ? $this->escape($settings['test_key']) : ''; ?>">
+          <input name="settings[test_key]" class="form-control" value="<?php echo isset($settings['test_key']) ? $this->e($settings['test_key']) : ''; ?>">
           <div class="help-block">
             <?php echo $this->text('The secret key is used for API calls on the server-side for testing purposes'); ?>
           </div>
@@ -71,7 +71,7 @@
       <div class="form-group">
         <label class="col-md-2 control-label"><?php echo $this->text('Test publishable key'); ?></label>
         <div class="col-md-4">
-          <input name="settings[test_public_key]" class="form-control" value="<?php echo isset($settings['test_public_key']) ? $this->escape($settings['test_public_key']) : ''; ?>">
+          <input name="settings[test_public_key]" class="form-control" value="<?php echo isset($settings['test_public_key']) ? $this->e($settings['test_public_key']) : ''; ?>">
           <div class="help-block">
             <?php echo $this->text('The publishable key is used to generate credit card tokens for testing purposes'); ?>
           </div>
@@ -80,7 +80,7 @@
       <div class="form-group">
         <label class="col-md-2 control-label"><?php echo $this->text('Live secret key'); ?></label>
         <div class="col-md-4">
-          <input name="settings[live_key]" class="form-control" value="<?php echo isset($settings['live_key']) ? $this->escape($settings['live_key']) : ''; ?>">
+          <input name="settings[live_key]" class="form-control" value="<?php echo isset($settings['live_key']) ? $this->e($settings['live_key']) : ''; ?>">
           <div class="help-block">
             <?php echo $this->text('The secret key is used for API calls on the server-side'); ?>
           </div>
@@ -89,7 +89,7 @@
       <div class="form-group">
         <label class="col-md-2 control-label"><?php echo $this->text('Live publishable key'); ?></label>
         <div class="col-md-4">
-          <input name="settings[live_public_key]" class="form-control" value="<?php echo isset($settings['live_public_key']) ? $this->escape($settings['live_public_key']) : ''; ?>">
+          <input name="settings[live_public_key]" class="form-control" value="<?php echo isset($settings['live_public_key']) ? $this->e($settings['live_public_key']) : ''; ?>">
           <div class="help-block">
               <?php echo $this->text('The publishable key is used to generate credit card tokens'); ?>
           </div>
