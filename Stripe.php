@@ -236,7 +236,7 @@ class Stripe extends Module
      */
     protected function submit()
     {
-        $this->data_token = $this->controller->getPosted('stripeToken');
+        $this->data_token = $this->controller->getPosted('stripeToken', '', true, 'string');
 
         if (empty($this->data_token)) {
             return null;

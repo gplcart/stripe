@@ -6,7 +6,7 @@
     "author": "Iurii Makukh <gplcart.software@gmail.com>",
     "license": "GNU General Public License 3.0",
     "dependencies": {
-        "omnipay_library": ">= 1.0"
+        "omnipay_library": "1.x"
     },
     "configure": "admin/module/settings/stripe",
     "settings": {
