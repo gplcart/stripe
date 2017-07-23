@@ -71,14 +71,16 @@ class Stripe extends Module
      */
     protected function getGatewayInstance()
     {
-        /* @var $object \gplcart\modules\omnipay_library\OmnipayLibrary */
-        $object = $this->getInstance('gplcart\\modules\\omnipay_library\\OmnipayLibrary');
+        /* @var $model \gplcart\modules\omnipay_library\OmnipayLibrary */
+        $model = $this->getInstance('gplcart\\modules\\omnipay_library\\OmnipayLibrary');
+        
+        $instance = $model->getGatewayInstance('Stripe');
 
-        if (!$object instanceof \Omnipay\Stripe\Gateway) {
+        if (!$instance instanceof \Omnipay\Stripe\Gateway) {
             throw new \InvalidArgumentException('Object is not instance of Omnipay\Stripe\Gateway');
         }
 
-        return $object->getGatewayInstance('Stripe');
+        return $instance;
     }
 
     /**
