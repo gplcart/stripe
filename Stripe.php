@@ -10,7 +10,6 @@
 namespace gplcart\modules\stripe;
 
 use gplcart\core\Module;
-use gplcart\core\models\Language as LanguageModel;
 
 /**
  * Main class for Stripe module
@@ -43,25 +42,17 @@ class Stripe extends Module
     protected $controller;
 
     /**
-     * Language model instance
-     * @var \gplcart\core\models\Language $language
-     */
-    protected $language;
-
-    /**
      * Order model instance
      * @var \gplcart\core\models\Order $order
      */
     protected $order;
 
     /**
-     * @param LanguageModel $language
+     * Constructor
      */
-    public function __construct(LanguageModel $language)
+    public function __construct()
     {
         parent::__construct();
-
-        $this->language = $language;
     }
 
     /**
@@ -72,8 +63,8 @@ class Stripe extends Module
     protected function getGatewayInstance()
     {
         /* @var $model \gplcart\modules\omnipay_library\OmnipayLibrary */
-        $model = $this->getInstance('gplcart\\modules\\omnipay_library\\OmnipayLibrary');
-        
+        $model = $this->getInstance('omnipay_library');
+
         $instance = $model->getGatewayInstance('Stripe');
 
         if (!$instance instanceof \Omnipay\Stripe\Gateway) {
@@ -133,7 +124,7 @@ class Stripe extends Module
             'module' => 'stripe',
             'image' => 'image/icon.png',
             'status' => $this->getStatus(),
-            'title' => $this->language->text('Stripe'),
+            'title' => 'Stripe',
             'template' => array('complete' => 'pay')
         );
     }
@@ -325,7 +316,7 @@ class Stripe extends Module
         );
 
         /* @var $object \gplcart\core\models\Transaction */
-        $object = $this->getInstance('gplcart\\core\\models\\Transaction');
+        $object = $this->getModel('Transaction');
         return $object->add($transaction);
     }
 
