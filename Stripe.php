@@ -2,9 +2,9 @@
 
 /**
  * @package Stripe
- * @author Iurii Makukh <gplcart.software@gmail.com> 
- * @copyright Copyright (c) 2017, Iurii Makukh <gplcart.software@gmail.com> 
- * @license https://www.gnu.org/licenses/gpl-3.0.en.html GNU General Public License 3.0 
+ * @author Iurii Makukh <gplcart.software@gmail.com>
+ * @copyright Copyright (c) 2017, Iurii Makukh <gplcart.software@gmail.com>
+ * @license https://www.gnu.org/licenses/gpl-3.0.en.html GNU General Public License 3.0
  */
 
 namespace gplcart\modules\stripe;
@@ -102,7 +102,7 @@ class Stripe extends Module
 
     /**
      * Implements hook "route.list"
-     * @param array $routes 
+     * @param array $routes
      */
     public function hookRouteList(array &$routes)
     {
@@ -116,7 +116,7 @@ class Stripe extends Module
 
     /**
      * Implements hook "payment.methods"
-     * @param array $methods 
+     * @param array $methods
      */
     public function hookPaymentMethods(array &$methods)
     {
@@ -148,9 +148,11 @@ class Stripe extends Module
         if (!$this->setting('status')) {
             return false;
         }
+
         if ($this->setting('test')) {
             return $this->setting('test_key') && $this->setting('test_public_key');
         }
+
         return $this->setting('live_key') && $this->setting('live_public_key');
     }
 
@@ -208,48 +210,44 @@ class Stripe extends Module
      */
     public function hookOrderCompletePage(array $order, $model, $controller)
     {
-        if ($order['payment'] !== 'stripe') {
-            return null;
+        if ($order['payment'] === 'stripe') {
+
+            $this->order = $model;
+            $this->data_order = $order;
+            $this->controller = $controller;
+
+            $this->submit();
+
+            $controller->setJs('https://js.stripe.com/v2');
+            $controller->setJs('system/modules/stripe/js/common.js');
+            $controller->setJsSettings('stripe', array('key' => $this->getPublicKey()));
         }
-
-        $this->order = $model;
-        $this->data_order = $order;
-        $this->controller = $controller;
-
-        $this->submit();
-
-        $controller->setJs('https://js.stripe.com/v2');
-        $controller->setJs('system/modules/stripe/js/common.js');
-        $controller->setJsSettings('stripe', array('key' => $this->getPublicKey()));
     }
 
     /**
      * Handles submitted payment
-     * @return null
      */
     protected function submit()
     {
         $this->data_token = $this->controller->getPosted('stripeToken', '', true, 'string');
 
-        if (empty($this->data_token)) {
-            return null;
+        if (!empty($this->data_token)) {
+
+            $params = array(
+                'token' => $this->data_token,
+                'currency' => $this->data_order['currency'],
+                'amount' => $this->data_order['total_formatted_number']
+            );
+
+            $gateway = $this->getGatewayInstance();
+            $gateway->setApiKey($this->getSecretKey());
+            $this->response = $gateway->purchase($params)->send();
+            $this->processResponse();
         }
-
-        $params = array(
-            'token' => $this->data_token,
-            'currency' => $this->data_order['currency'],
-            'amount' => $this->data_order['total_formatted_number']
-        );
-
-        $gateway = $this->getGatewayInstance();
-        $gateway->setApiKey($this->getSecretKey());
-        $this->response = $gateway->purchase($params)->send();
-        return $this->processResponse();
     }
 
     /**
      * Processes gateway response
-     * @return boolean
      */
     protected function processResponse()
     {
@@ -257,24 +255,12 @@ class Stripe extends Module
             $this->updateOrderStatus();
             $this->addTransaction();
             $this->redirectSuccess();
-            return true;
-        }
-
-        if ($this->response->isRedirect()) {
+        } else if ($this->response->isRedirect()) {
             $this->response->redirect();
-            return true;
+        } else {
+            $message = $this->response->getMessage();
+            $this->controller->redirect('', $message, 'warning', true);
         }
-
-        $this->redirectError();
-        return false;
-    }
-
-    /**
-     * Redirect on error transaction
-     */
-    protected function redirectError()
-    {
-        $this->controller->redirect('', $this->response->getMessage(), 'warning', true);
     }
 
     /**
