@@ -1,5 +1,5 @@
-/* global window, GplCart, Stripe, jQuery */
-(function (window, GplCart, Stripe, $) {
+/* global window, Gplcart, Stripe, jQuery */
+(function (window, Gplcart, Stripe, $) {
 
     "use strict";
 
@@ -7,13 +7,13 @@
      * 
      * @returns {undefined}
      */
-    GplCart.onload.submitStripe = function () {
+    Gplcart.onload.submitStripe = function () {
 
-        if (!GplCart.settings.stripe || !GplCart.settings.stripe.key) {
+        if (!Gplcart.settings.stripe || !Gplcart.settings.stripe.key) {
             return;
         }
 
-        Stripe.setPublishableKey(GplCart.settings.stripe.key);
+        Stripe.setPublishableKey(Gplcart.settings.stripe.key);
 
         var form = $('form#stripe-payment-form');
 
@@ -44,4 +44,4 @@
         }
     };
 
-})(window, GplCart, Stripe, jQuery);
+})(window, Gplcart, Stripe, jQuery);
