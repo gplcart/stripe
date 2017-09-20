@@ -65,6 +65,7 @@ class Stripe extends Module
         /* @var $model \gplcart\modules\omnipay_library\OmnipayLibrary */
         $model = $this->getInstance('omnipay_library');
 
+        /* @var $instance \Omnipay\Stripe\Gateway */
         $instance = $model->getGatewayInstance('Stripe');
 
         if (!$instance instanceof \Omnipay\Stripe\Gateway) {
