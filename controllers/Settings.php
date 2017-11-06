@@ -53,7 +53,7 @@ class Settings extends BackendController
         $this->setBreadcrumbEditSettings();
 
         $this->setData('statuses', $this->order->getStatuses());
-        $this->setData('settings', $this->config->module('stripe'));
+        $this->setData('settings', $this->config->getFromModule('stripe'));
 
         $this->submitSettings();
         $this->outputEditSettings();
