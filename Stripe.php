@@ -57,26 +57,6 @@ class Stripe extends Module
     }
 
     /**
-     * Returns Stripe gateway object
-     * @return object
-     * @throws \InvalidArgumentException
-     */
-    protected function getGatewayInstance()
-    {
-        /* @var $model \gplcart\modules\omnipay_library\OmnipayLibrary */
-        $model = $this->getInstance('omnipay_library');
-
-        /* @var $instance \Omnipay\Stripe\Gateway */
-        $instance = $model->getGatewayInstance('Stripe');
-
-        if (!$instance instanceof \Omnipay\Stripe\Gateway) {
-            throw new \InvalidArgumentException('Object is not instance of Omnipay\Stripe\Gateway');
-        }
-
-        return $instance;
-    }
-
-    /**
      * Implements hook "module.enable.before"
      * @param mixed $result
      */
@@ -132,53 +112,6 @@ class Stripe extends Module
     }
 
     /**
-     * Returns a module setting
-     * @param string $name
-     * @param mixed $default
-     * @return mixed
-     */
-    protected function setting($name, $default = null)
-    {
-        return $this->config->getFromModule('stripe', $name, $default);
-    }
-
-    /**
-     * Returns the current status of the payment method
-     */
-    protected function getStatus()
-    {
-        if (!$this->setting('status')) {
-            return false;
-        }
-
-        if ($this->setting('test')) {
-            return $this->setting('test_key') && $this->setting('test_public_key');
-        }
-
-        return $this->setting('live_key') && $this->setting('live_public_key');
-    }
-
-    /**
-     * Returns a public API key
-     * @return string
-     */
-    protected function getPublicKey()
-    {
-        $key = $this->setting('test') ? 'test_public_key' : 'live_public_key';
-        return $this->setting($key);
-    }
-
-    /**
-     * Returns a secret API key
-     * @return string
-     */
-    protected function getSecretKey()
-    {
-        $key = $this->setting('test') ? 'test_key' : 'live_key';
-        return $this->setting($key);
-    }
-
-    /**
      * Implements hook "order.add.before"
      * @param array $order
      * @param \gplcart\core\models\Order $model
@@ -218,7 +151,7 @@ class Stripe extends Module
             $this->data_order = $order;
             $this->controller = $controller;
 
-            $this->submit();
+            $this->submitPayment();
 
             $controller->setJs('https://js.stripe.com/v2');
             $controller->setJs('system/modules/stripe/js/common.js');
@@ -227,9 +160,76 @@ class Stripe extends Module
     }
 
     /**
+     * Returns Stripe gateway object
+     * @return object
+     * @throws \InvalidArgumentException
+     */
+    public function getGatewayInstance()
+    {
+        /* @var $model \gplcart\modules\omnipay_library\OmnipayLibrary */
+        $model = $this->getInstance('omnipay_library');
+
+        /* @var $instance \Omnipay\Stripe\Gateway */
+        $instance = $model->getGatewayInstance('Stripe');
+
+        if (!$instance instanceof \Omnipay\Stripe\Gateway) {
+            throw new \InvalidArgumentException('Object is not instance of Omnipay\Stripe\Gateway');
+        }
+
+        return $instance;
+    }
+
+    /**
+     * Returns a public API key
+     * @return string
+     */
+    public function getPublicKey()
+    {
+        $key = $this->getModuleSetting('test') ? 'test_public_key' : 'live_public_key';
+        return $this->getModuleSetting($key);
+    }
+
+    /**
+     * Returns a secret API key
+     * @return string
+     */
+    public function getSecretKey()
+    {
+        $key = $this->getModuleSetting('test') ? 'test_key' : 'live_key';
+        return $this->getModuleSetting($key);
+    }
+
+    /**
+     * Returns a module setting
+     * @param string $name
+     * @param mixed $default
+     * @return mixed
+     */
+    protected function getModuleSetting($name, $default = null)
+    {
+        return $this->config->getFromModule('stripe', $name, $default);
+    }
+
+    /**
+     * Returns the current status of the payment method
+     */
+    protected function getStatus()
+    {
+        if (!$this->getModuleSetting('status')) {
+            return false;
+        }
+
+        if ($this->getModuleSetting('test')) {
+            return $this->getModuleSetting('test_key') && $this->getModuleSetting('test_public_key');
+        }
+
+        return $this->getModuleSetting('live_key') && $this->getModuleSetting('live_public_key');
+    }
+
+    /**
      * Handles submitted payment
      */
-    protected function submit()
+    protected function submitPayment()
     {
         $this->data_token = $this->controller->getPosted('stripeToken', '', true, 'string');
 
@@ -284,7 +284,7 @@ class Stripe extends Module
      */
     protected function updateOrderStatus()
     {
-        $data = array('status' => $this->setting('order_status_success'));
+        $data = array('status' => $this->getModuleSetting('order_status_success'));
         $this->order->update($this->data_order['order_id'], $data);
         $this->data_order = $this->order->get($this->data_order['order_id']);
     }
