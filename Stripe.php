@@ -10,12 +10,12 @@
 namespace gplcart\modules\stripe;
 
 use gplcart\core\Module,
-    gplcart\core\Config;
+    gplcart\core\Container;
 
 /**
  * Main class for Stripe module
  */
-class Stripe extends Module
+class Stripe
 {
 
     /**
@@ -49,11 +49,17 @@ class Stripe extends Module
     protected $order;
 
     /**
-     * @param Config $config
+     * Module class instance
+     * @var \gplcart\core\Module $module
      */
-    public function __construct(Config $config)
+    protected $module;
+
+    /**
+     * @param Module $module
+     */
+    public function __construct(Module $module)
     {
-        parent::__construct($config);
+        $this->module = $module;
     }
 
     /**
@@ -62,11 +68,7 @@ class Stripe extends Module
      */
     public function hookModuleEnableBefore(&$result)
     {
-        try {
-            $this->getGatewayInstance();
-        } catch (\InvalidArgumentException $ex) {
-            $result = $ex->getMessage();
-        }
+        $this->checkGateway($result);
     }
 
     /**
@@ -75,11 +77,7 @@ class Stripe extends Module
      */
     public function hookModuleInstallBefore(&$result)
     {
-        try {
-            $this->getGatewayInstance();
-        } catch (\InvalidArgumentException $ex) {
-            $result = $ex->getMessage();
-        }
+        $this->checkGateway($result);
     }
 
     /**
@@ -145,6 +143,30 @@ class Stripe extends Module
      */
     public function hookOrderCompletePage(array $order, $model, $controller)
     {
+        $this->setCompletePage($order, $model, $controller);
+    }
+
+    /**
+     * Check that Stripe gateway object is loaded
+     * @param mixed $result
+     */
+    protected function checkGateway(&$result)
+    {
+        try {
+            $this->getGateway();
+        } catch (\Exception $ex) {
+            $result = $ex->getMessage();
+        }
+    }
+
+    /**
+     * Set up order complete page
+     * @param array $order
+     * @param \gplcart\core\models\Order $model
+     * @param \gplcart\core\controllers\frontend\Controller $controller
+     */
+    protected function setCompletePage(array $order, $model, $controller)
+    {
         if ($order['payment'] === 'stripe') {
 
             $this->order = $model;
@@ -161,22 +183,20 @@ class Stripe extends Module
 
     /**
      * Returns Stripe gateway object
-     * @return object
+     * @return \Omnipay\Stripe\Gateway
      * @throws \InvalidArgumentException
      */
-    public function getGatewayInstance()
+    public function getGateway()
     {
-        /* @var $model \gplcart\modules\omnipay_library\OmnipayLibrary */
-        $model = $this->getInstance('omnipay_library');
+        /* @var $module \gplcart\modules\omnipay_library\OmnipayLibrary */
+        $module = $this->module->getInstance('omnipay_library');
+        $gateway = $module->getGatewayInstance('Stripe');
 
-        /* @var $instance \Omnipay\Stripe\Gateway */
-        $instance = $model->getGatewayInstance('Stripe');
-
-        if (!$instance instanceof \Omnipay\Stripe\Gateway) {
+        if (!$gateway instanceof \Omnipay\Stripe\Gateway) {
             throw new \InvalidArgumentException('Object is not instance of Omnipay\Stripe\Gateway');
         }
 
-        return $instance;
+        return $gateway;
     }
 
     /**
@@ -207,7 +227,7 @@ class Stripe extends Module
      */
     protected function getModuleSetting($name, $default = null)
     {
-        return $this->config->getFromModule('stripe', $name, $default);
+        return $this->module->getSettings('stripe', $name, $default);
     }
 
     /**
@@ -241,7 +261,7 @@ class Stripe extends Module
                 'amount' => $this->data_order['total_formatted_number']
             );
 
-            $gateway = $this->getGatewayInstance();
+            $gateway = $this->getGateway();
             $gateway->setApiKey($this->getSecretKey());
             $this->response = $gateway->purchase($params)->send();
             $this->processResponse();
@@ -260,8 +280,7 @@ class Stripe extends Module
         } else if ($this->response->isRedirect()) {
             $this->response->redirect();
         } else {
-            $message = $this->response->getMessage();
-            $this->controller->redirect('', $message, 'warning', true);
+            $this->controller->redirect('', $this->response->getMessage(), 'warning', true);
         }
     }
 
@@ -295,6 +314,9 @@ class Stripe extends Module
      */
     protected function addTransaction()
     {
+        /* @var $model \gplcart\core\models\Transaction */
+        $model = Container::get('gplcart\\core\\models\\Transaction');
+
         $transaction = array(
             'total' => $this->data_order['total'],
             'order_id' => $this->data_order['order_id'],
@@ -303,9 +325,7 @@ class Stripe extends Module
             'gateway_transaction_id' => $this->response->getTransactionReference()
         );
 
-        /* @var $object \gplcart\core\models\Transaction */
-        $object = $this->getModel('Transaction');
-        return $object->add($transaction);
+        return $model->add($transaction);
     }
 
 }
