@@ -9,13 +9,13 @@
 
 namespace gplcart\modules\stripe;
 
-use gplcart\core\Module,
-    gplcart\core\Container;
+use gplcart\core\Container,
+    gplcart\core\Module as CoreModule;
 
 /**
  * Main class for Stripe module
  */
-class Stripe
+class Module
 {
 
     /**
@@ -55,9 +55,9 @@ class Stripe
     protected $module;
 
     /**
-     * @param Module $module
+     * @param CoreModule $module
      */
-    public function __construct(Module $module)
+    public function __construct(CoreModule $module)
     {
         $this->module = $module;
     }
@@ -188,7 +188,7 @@ class Stripe
      */
     public function getGateway()
     {
-        /* @var $module \gplcart\modules\omnipay_library\OmnipayLibrary */
+        /* @var $module \gplcart\modules\omnipay_library\Module */
         $module = $this->module->getInstance('omnipay_library');
         $gateway = $module->getGatewayInstance('Stripe');
 
