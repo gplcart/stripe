@@ -9,8 +9,10 @@
 
 namespace gplcart\modules\stripe;
 
+use Exception;
 use gplcart\core\Container,
     gplcart\core\Module as CoreModule;
+use gplcart\core\exceptions\Dependency as DependencyException;
 
 /**
  * Main class for Stripe module
@@ -154,7 +156,7 @@ class Module
     {
         try {
             $this->getGateway();
-        } catch (\Exception $ex) {
+        } catch (Exception $ex) {
             $result = $ex->getMessage();
         }
     }
@@ -184,7 +186,7 @@ class Module
     /**
      * Returns Stripe gateway object
      * @return \Omnipay\Stripe\Gateway
-     * @throws \InvalidArgumentException
+     * @throws DependencyException
      */
     public function getGateway()
     {
@@ -193,7 +195,7 @@ class Module
         $gateway = $module->getGatewayInstance('Stripe');
 
         if (!$gateway instanceof \Omnipay\Stripe\Gateway) {
-            throw new \InvalidArgumentException('Object is not instance of Omnipay\Stripe\Gateway');
+            throw new DependencyException('Gateway must be instance of Omnipay\Stripe\Gateway');
         }
 
         return $gateway;
