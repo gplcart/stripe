@@ -10,9 +10,9 @@
 namespace gplcart\modules\stripe;
 
 use Exception;
-use gplcart\core\Module,
-    gplcart\core\Container;
-use gplcart\core\exceptions\Dependency as DependencyException;
+use gplcart\core\Module;
+use Omnipay\Stripe\Gateway;
+use UnexpectedValueException;
 
 /**
  * Main class for Stripe module
@@ -186,7 +186,7 @@ class Main
     /**
      * Returns Stripe gateway object
      * @return \Omnipay\Stripe\Gateway
-     * @throws DependencyException
+     * @throws UnexpectedValueException
      */
     public function getGateway()
     {
@@ -194,8 +194,8 @@ class Main
         $module = $this->module->getInstance('omnipay_library');
         $gateway = $module->getGatewayInstance('Stripe');
 
-        if (!$gateway instanceof \Omnipay\Stripe\Gateway) {
-            throw new DependencyException('Gateway must be instance of Omnipay\Stripe\Gateway');
+        if (!$gateway instanceof Gateway) {
+            throw new UnexpectedValueException('Gateway must be instance of Omnipay\Stripe\Gateway');
         }
 
         return $gateway;
@@ -317,7 +317,7 @@ class Main
     protected function addTransaction()
     {
         /* @var $model \gplcart\core\models\Transaction */
-        $model = Container::get('gplcart\\core\\models\\Transaction');
+        $model = gplcart_instance_model('Transaction');
 
         $transaction = array(
             'total' => $this->data_order['total'],
