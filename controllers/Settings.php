@@ -9,13 +9,13 @@
 
 namespace gplcart\modules\stripe\controllers;
 
-use gplcart\core\models\Order as OrderModel;
-use gplcart\core\controllers\backend\Controller as BackendController;
+use gplcart\core\controllers\backend\Controller;
+use gplcart\core\models\Order;
 
 /**
  * Handles incoming requests and outputs data related to Stripe module
  */
-class Settings extends BackendController
+class Settings extends Controller
 {
 
     /**
@@ -25,9 +25,10 @@ class Settings extends BackendController
     protected $order;
 
     /**
-     * @param OrderModel $order
+     * Settings constructor.
+     * @param Order $order
      */
-    public function __construct(OrderModel $order)
+    public function __construct(Order $order)
     {
         parent::__construct();
 
