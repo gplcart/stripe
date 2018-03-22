@@ -192,6 +192,8 @@ class Main
     {
         /* @var $module \gplcart\modules\omnipay_library\Main */
         $module = $this->module->getInstance('omnipay_library');
+
+        /** @var \Omnipay\Stripe\Gateway $gateway */
         $gateway = $module->getGatewayInstance('Stripe');
 
         if (!$gateway instanceof Gateway) {
